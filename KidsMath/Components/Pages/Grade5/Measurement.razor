@@ -1,0 +1,97 @@
+﻿@page "/emoji-measurement"
+@rendermode InteractiveServer
+@using KidsMath.Components.Pages
+@using KidsMath.Service
+@inject KidsMath.Service.IMeasurementService _measurementService
+@inherits BaseComponent<OptionsModel>
+
+<MainComponent OnNextActionClicked="SubmitAnswers"
+               OnQuestionCountChanged="OnQuestionCountChanged"
+               Title="@Title"
+               ShowCongrats="@ShowCongrats"
+               CompletionPercentage="@CompletionPercentage">
+
+    <div class="container mt-4">
+        @foreach (var problem in Problems)
+        {
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0">@problem.Question</h5>
+                </div>
+                <div class="card-body">
+                    @foreach (var option in problem.Options)
+                    {
+                        <label class="form-check-label option-label mb-2 d-block">
+                            <input class="form-check-input" type="radio" name="@problem.Id" value="@option" @onchange="() => SelectOption(problem.Id, option)" />
+                            <span class="ms-2">@option</span>
+                        </label>                       
+                    }
+
+                    @if (problem.IsAnswered)
+                    {
+                        <FeedbackComponent IsCorrect="@problem.IsCorrect" />
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</MainComponent>
+
+@code {
+    [Parameter] public string Title { get; set; } = "Introduction to Measurement";
+
+    protected override List<OptionsModel> GenerateQuestions(int questionCount)
+    {
+        Problems = _measurementService.GetEmojiQuestions(questionCount) ?? new List<OptionsModel>();
+        return Problems;
+    }
+
+    protected override bool AllAnswersCorrect(List<OptionsModel> problems)
+    {
+        return problems.All(p => p.IsCorrect);
+    }
+
+    private void SelectOption(Guid problemId, string selectedOption)
+    {
+        var problem = Problems?.FirstOrDefault(a => a.Id == problemId);
+        if (problem != null)
+        {
+            problem.IsAnswered = true;
+            problem.IsCorrect = (problem.CorrectAnswer == selectedOption);
+            problem.UserAnswer = selectedOption;
+        }
+    }
+
+    
+
+}
+
+<style>
+    .card {
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .card-header {
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    .option-label {
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        padding: 10px;
+        border-radius: 5px;
+        transition: background-color 0.3s ease;
+    }
+
+        .option-label:hover {
+            background-color: #e9ecef;
+        }
+
+    .form-check-input {
+        cursor: pointer;
+    }
+</style>

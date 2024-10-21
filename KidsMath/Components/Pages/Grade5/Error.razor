@@ -1,0 +1,259 @@
+﻿@page "/boxWhiskerPlotError"
+@inject IJSRuntime JS
+@rendermode InteractiveServer
+@using System.Linq
+
+<h3>Box and Whisker Plots</h3>
+
+<div id="boxWhiskerPlot"></div>
+
+@for (int i = 0; i < plots.Count; i++)
+{
+    var plot = plots[i];
+    <div class="radio-option">
+        <input type="radio" class="numbers" id="plot-@i" name="correctPlot" value="@i" @onchange="OnPlotSelection" checked="@(selectedPlotIndex == i)" />
+        <label class="radio-label" for="plot-@i">
+
+            Min: <span class="bold-number">@plot.Min</span>,
+            Q1: <span class="bold-number">@plot.Q1</span>,
+            Median: <span class="bold-number">@plot.Median</span>,
+            Q3: <span class="bold-number">@plot.Q3</span>,
+            Max: <span class="bold-number">@plot.Max</span>
+        </label>
+    </div>
+
+
+}
+
+@if (feedbackGiven)
+{
+    <span class="feedback-message @(GetFeedbackClass())">
+        @GetFeedbackMessage()
+    </span>
+}
+
+<div class="button-group">
+    <button class="btn btn-success" @onclick="CheckAnswers">Submit Answers</button>
+</div>
+
+@code {
+    private List<PlotData> plots = new();
+    private bool feedbackGiven = false;
+    private bool allCorrect = false;
+    private Random random = new();
+    private int correctPlotIndex = -1;
+    private int selectedPlotIndex = -1;
+    private int checkAnswersCount = 0;
+
+    protected override void OnInitialized()
+    {
+        GenerateNewPlots();
+    }
+
+    private void GenerateNewPlots()
+    {
+        plots.Clear();
+        selectedPlotIndex = -1;  // Reset selected plot index
+        feedbackGiven = false;   // Reset feedback flag
+        correctPlotIndex = random.Next(0, 4);
+        checkAnswersCount = 0;
+
+        var numbers = Enumerable.Range(1, random.Next(9, 11))
+                                .Select(_ => random.Next(1, 50))
+                                .OrderBy(n => n)
+                                .ToList();
+
+        double min = numbers.First();
+        double max = numbers.Last();
+        double q1 = GetMiddleAverage(SplitList(numbers, "first"));
+        double median = GetMiddleAverage(numbers);
+        double q3 = GetMiddleAverage(SplitList(numbers, "second"));
+
+        for (int i = 0; i < 4; i++)
+        {
+            PlotData plotData;
+
+            if (i == correctPlotIndex)
+            {
+                plotData = new PlotData
+                    {
+                        Numbers = numbers,
+                        Min = min,
+                        Q1 = q1,
+                        Median = median,
+                        Q3 = q3,
+                        Max = max
+                    };
+            }
+            else
+            {
+                plotData = new PlotData
+                    {
+                        Numbers = numbers,
+                        Min = (i == 3) ? random.Next(0, (int)min) : min,
+                        Q1 = (i == 0 || i == 2) ? random.Next((int)min, (int)q1) : q1,
+                        Median = (i == 0 || i == 1 || i == 3) ? random.Next((int)q1, (int)median) : median,
+                        Q3 = (i == 2) ? random.Next((int)median, (int)q3) : q3,
+                        Max = (i == 1) ? random.Next((int)q3, (int)max) : max
+                    };
+            }
+
+            plots.Add(plotData);
+        }
+
+    }
+
+    private async Task CheckAnswers()
+    {
+        feedbackGiven = true;
+        allCorrect = selectedPlotIndex == correctPlotIndex;
+        checkAnswersCount++;
+
+        var plot = plots[correctPlotIndex];
+        await CallDrawWhiskerPlot(plot.Min, plot.Q1, plot.Median, plot.Q3, plot.Max);
+
+        if (allCorrect)
+        {
+            feedbackGiven = false;
+            allCorrect = false;
+            if (checkAnswersCount == 1) { await Task.Delay(1000); }
+            GenerateNewPlots();
+            plot = plots[correctPlotIndex];
+            await CallDrawWhiskerPlot(plot.Min, plot.Q1, plot.Median, plot.Q3, plot.Max);
+        }
+    }
+
+    private void OnPlotSelection(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString() ?? string.Empty, out int index))
+        {
+            selectedPlotIndex = index;
+        }
+    }
+
+    private string GetFeedbackClass()
+    {
+        return selectedPlotIndex == correctPlotIndex ? "correct" : "incorrect";
+    }
+
+    private string GetFeedbackMessage()
+    {
+        return selectedPlotIndex == correctPlotIndex ? "Correct!" : $"Incorrect, the correct answer is Option {correctPlotIndex + 1}.";
+    }
+
+    private List<int> SplitList(List<int> originalList, string half)
+    {
+        int splitIndex = originalList.Count / 2;
+        return half.ToLower() == "first" ? originalList.Take(splitIndex).ToList() : originalList.Skip(splitIndex + (originalList.Count % 2)).ToList();
+    }
+
+    private double GetMiddleAverage(List<int> list)
+    {
+        if (list.Count == 0) return 0;
+
+        if (list.Count % 2 == 0)
+        {
+            int midIndex = list.Count / 2;
+            return (list[midIndex - 1] + list[midIndex]) / 2.0;
+        }
+        else
+        {
+            return list[list.Count / 2];
+        }
+    }
+
+    public class PlotData
+    {
+        public List<int> Numbers { get; set; } = [];
+        public double Min { get; set; }
+        public double Q1 { get; set; }
+        public double Median { get; set; }
+        public double Q3 { get; set; }
+        public double Max { get; set; }
+    }
+
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await Task.Delay(500);
+            var plot = plots[correctPlotIndex];
+            await CallDrawWhiskerPlot(plot.Min, plot.Q1, plot.Median, plot.Q3, plot.Max);
+        }
+    }
+
+    private async Task CallDrawWhiskerPlot(double min, double q1, double median, double q3, double max)
+    {
+        await JS.InvokeVoidAsync("drawBoxWhisker", min, q1, median, q3, max, "#boxWhiskerPlot");
+    }
+}
+
+<style>
+    h3 {
+        color: #4A90E2;
+        padding-bottom: 20px;
+    }
+
+
+    .feedback-message.correct {
+        color: green;
+    }
+
+    .feedback-message.incorrect {
+        color: red;
+    }
+
+    .button-group {
+        margin-top: 20px;
+        display: flex;
+        justify-content: space-between;
+    }
+
+    .btn {
+        padding: 10px 20px;
+        font-size: 16px;
+        border: none;
+        border-radius: 4px;
+        color: #fff;
+        cursor: pointer;
+    }
+
+    .btn-success {
+        background-color: #28a745;
+    }
+
+    .radio-option {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px; /* Space between each option */
+        padding: 8px;
+        border-radius: 5px;
+        border: 1px solid #ccc;
+        background-color: #f9f9f9;
+        transition: background-color 0.3s ease;
+    }
+
+        .radio-option:hover {
+            background-color: #f1f1f1; /* Change background on hover */
+        }
+
+    .numbers {
+        margin-right: 10px; /* Space between radio button and label */
+        width: 20px;
+        height: 20px;
+        accent-color: #4A90E2; /* Change color of radio button */
+    }
+
+    .radio-label {
+        font-size: 1.1em;
+        color: #333;
+        cursor: pointer;
+    }
+
+    .bold-number {
+        font-weight: bold; /* Bold styling for numbers */
+    }
+
+</style>
+

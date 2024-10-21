@@ -1,0 +1,91 @@
+﻿@using Microsoft.AspNetCore.Components
+@using KidsMath.Components.Pages;
+
+ @if (ShowQuestionCount ?? true)
+ {
+    <div style="display: flex; align-items: center; margin-bottom: 15px;">
+        <h3>@Title</h3>
+    
+        <div style="margin-left: auto;">
+            <QuestionCountSelector DefaultQuestionCount="@QuestionCount" QuestionCountChanged="OnQuestionCountChanged" />
+       </div>
+    
+    </div>
+}
+
+@if (CompletionPercentage > 0)
+{
+    <div style="width: 100%; margin-bottom: 15px;">
+        <!-- Progress Bar Container -->
+        <div style="position: relative; height: 25px; background-color: #f1f1f1; border-radius: 12px; overflow: hidden; margin-top: 10px;">
+            <!-- Progress Bar Fill -->
+            <div style="
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: @CompletionPercentage%;
+            background: linear-gradient(90deg, #00c6ff, #0072ff);
+            border-radius: 12px;
+            transition: width 0.4s ease-in-out;">
+            </div>
+        </div>
+    </div>
+
+    @if (CompletionPercentage == 100)
+    {
+        <div style="text-align: center; margin-top: 10px;">
+            <h4>🎉 Amazing Work! You've mastered it all! 🎉</h4>
+        </div>
+    }
+}
+
+
+<hr style="margin: 15px 0; border: 1px solid #ccc;">
+
+@if (ShowCongrats)
+{
+    <CongratulationsMessage ShowConfetti="true" />
+}
+else
+{
+    @ChildContent
+
+    <button class="btn btn-primary" @onclick="OnNextActionClickedHandler" style="height: 42px; font-size: 16px; margin-top: 10px; margin-bottom: 20px">Next Questions</button>
+}
+
+
+
+@code {
+    [Parameter]
+    public string Title { get; set; } = string.Empty;
+
+    [Parameter]
+    public int? QuestionCount { get; set; }
+
+    [Parameter]
+    public bool? ShowQuestionCount { get; set; } = true;
+
+    [Parameter]
+    public bool ShowCongrats { get; set; }
+
+    [Parameter]
+    public EventCallback<int> OnQuestionCountChanged { get; set; }
+
+    [Parameter]
+    public RenderFragment ChildContent { get; set; }
+
+    [Parameter]
+    public EventCallback OnNextActionClicked { get; set; }
+
+    [Parameter]
+    public double? CompletionPercentage { get; set; }
+    
+
+    private async Task OnNextActionClickedHandler()
+    {
+        await OnNextActionClicked.InvokeAsync();
+    }
+}
+
+

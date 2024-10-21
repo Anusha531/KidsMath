@@ -1,0 +1,182 @@
+﻿@page "/leafStemPlot"
+@rendermode InteractiveServer
+
+@* Declare the dynamic data set *@
+@code {
+    private List<int> dataSet = [];
+    private string wordProblemQuestion = string.Empty;
+    private string wordProblemResult = string.Empty;
+    private int correctAnswer;
+    private List<int> answerOptions = new List<int>();
+    private string selectedAnswer = string.Empty; // Variable to track selected answer
+    private bool isCorrect;
+
+    protected override void OnInitialized()
+    {
+        GenerateWordProblems();
+    }
+
+    private void GenerateWordProblems()
+    {
+        dataSet = GenerateDataSet();
+        var selectedProblem = GenerateWordProblem(dataSet);
+        wordProblemQuestion = selectedProblem.question;
+        correctAnswer = selectedProblem.answer;
+        answerOptions = GenerateAnswerOptions(correctAnswer);
+        wordProblemResult = string.Empty; // Clear previous result
+        selectedAnswer = string.Empty; // Reset the selected answer
+    }
+
+    private void CheckWordProblemAnswer(ChangeEventArgs e)
+    {
+        selectedAnswer = e.Value?.ToString() ?? string.Empty; // Store selected answer
+        isCorrect = selectedAnswer == correctAnswer.ToString();
+        wordProblemResult = isCorrect ? "Correct!" : $"Incorrect. The correct answer is {correctAnswer}.";
+        StateHasChanged();
+    }
+
+
+    private Random random = new Random();
+
+    public List<int> GenerateDataSet()
+    {
+        var dataSet = new List<int>();
+        var stems = new HashSet<int>();
+
+        var stemCount = random.Next(3, 5);
+
+        while (stems.Count < stemCount)
+        {
+            int stem = random.Next(0, 10);
+            stems.Add(stem);
+        }
+
+        foreach (var stem in stems)
+        {
+            for (int i = 0; i < random.Next(2, 5); i++)
+            {
+                int leaf = random.Next(0, 10);
+                dataSet.Add(stem * 10 + leaf);
+            }
+        }
+
+        return dataSet.OrderBy(x => x).ToList();
+    }
+
+    public Dictionary<int, List<int>> GenerateStemAndLeafPlot(List<int> data)
+    {
+        var stemAndLeaf = new Dictionary<int, List<int>>();
+        foreach (var number in data)
+        {
+            int stem = number / 10;
+            int leaf = number % 10;
+            if (!stemAndLeaf.ContainsKey(stem))
+            {
+                stemAndLeaf[stem] = new List<int>();
+            }
+            stemAndLeaf[stem].Add(leaf);
+        }
+        return stemAndLeaf;
+    }
+
+    public int CountSpecificNumber(List<int> data, int number)
+    {
+        return data.Count(n => n == number);
+    }
+
+    public int CountNumbersLessThan(List<int> data, int threshold)
+    {
+        return data.Count(n => n < threshold);
+    }
+
+    public int CountNumbersGreaterThan(List<int> data, int threshold)
+    {
+        return data.Count(n => n > threshold);
+    }
+
+    public int CountNumbersInRange(List<int> data, int min, int max)
+    {
+        return data.Count(n => n >= min && n <= max);
+    }
+
+    public (string question, int answer) GenerateWordProblem(List<int> dataSet)
+    {
+        int randomIndex = random.Next(dataSet.Count - 5);
+        int randomValue = dataSet[randomIndex];
+        int randomRangeStart = randomValue;
+        int randomRangeEnd = dataSet[randomIndex + 3];
+
+        var wordProblems = new List<(string question, int answer)>
+            {
+                ($"How many students scored exactly {randomValue} on their test?", CountSpecificNumber(dataSet, randomValue)),
+                ($"How many students scored less than {randomValue} on their test?", CountNumbersLessThan(dataSet, randomValue)),
+                ($"How many students scored more than {randomValue} on their test?", CountNumbersGreaterThan(dataSet, randomValue)),
+                ($"How many students scored between {randomRangeStart} and {randomRangeEnd} on their test?", CountNumbersInRange(dataSet, randomRangeStart, randomRangeEnd))
+            };
+
+        return wordProblems[random.Next(wordProblems.Count)];
+    }
+
+    public List<int> GenerateAnswerOptions(int correctAnswer)
+    {
+        var answerOptions = new List<int> { correctAnswer };
+
+        while (answerOptions.Count < 4)
+        {
+            int randomOption = random.Next(0, 10);
+
+            if (!answerOptions.Contains(randomOption))
+            {
+                answerOptions.Add(randomOption);
+            }
+        }
+
+        return answerOptions.OrderBy(x => random.Next()).ToList();
+    }
+
+    public string GetFeedbackColor(bool? isCorrect) => isCorrect switch
+    {
+        true => "green",
+        false => "red",
+        _ => "black"
+    };
+}
+
+<div>
+    <h4 style="color: #4A90E2; font-size: 24px;">Leaf and Stem Plot Question</h4>
+    <!-- Stem and Leaf Plot Display using CSS Grid with Vertical Line -->
+    <div style="display: grid; grid-template-columns: auto 2px auto; gap: 20px; border: 3px solid #4A90E2; padding: 20px; width: max-content; background-color: #E1F5FE; position: relative; font-size: 18px;">
+        <!-- Headers -->
+        <p style="margin: 0; font-weight: bold; text-align: right; color: #FF6F61;">Stem</p>
+        <div style="width: 2px; background-color: #FF6F61; height: 100%;"></div>
+        <p style="margin: 0; font-weight: bold; text-align: left; color: #FF6F61;">Leaf</p>
+
+        <!-- Dynamically generate the Stem and Leaf Values -->
+        @foreach (var stem in GenerateStemAndLeafPlot(dataSet).Keys.OrderBy(s => s))
+        {
+            <p style="margin: 0; text-align: right; color: #333333;">@stem</p>
+            <div style="width: 2px; background-color: #FF6F61; height: 100%;"></div>
+            <p style="margin: 0; text-align: left; color: #333333;">@string.Join(", ", GenerateStemAndLeafPlot(dataSet)[stem])</p>
+        }
+    </div>
+
+    <!-- Dynamic Word Problem -->
+    <p style="color: #333333; font-size: 20px;">@wordProblemQuestion</p>
+
+    <div style="margin-top: 20px; color: #4A90E2; font-size: 18px;">
+        @for (int i = 0; i < answerOptions.Count; i++)
+        {
+            <input type="radio" id="wordProblemAnswer@(i)" name="wordProblemAnswer" value="@answerOptions[i]" checked="@((selectedAnswer != null && selectedAnswer == answerOptions[i].ToString()) ? "checked" : null)"
+                   @onchange="CheckWordProblemAnswer">
+            <label for="wordProblemAnswer@(i)">@answerOptions[i]</label>
+            <br>
+        }
+        <span style="font-size: 18px; color: @(GetFeedbackColor(isCorrect));">
+            @wordProblemResult
+        </span>
+    </div>
+
+    <!-- Next Question Button -->
+    <button @onclick="GenerateWordProblems" style="margin-top: 5px; padding: 5px 5px; font-size: 18px; color: white; background-color: #4A90E2; border: none; border-radius: 5px;">Next Question</button>
+</div>
+

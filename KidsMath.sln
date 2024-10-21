@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.12.35209.166
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KidsMath", "KidsMath\KidsMath.csproj", "{668DC2E4-BEB2-4EE2-8A9C-B23CE169371B}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{668DC2E4-BEB2-4EE2-8A9C-B23CE169371B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{668DC2E4-BEB2-4EE2-8A9C-B23CE169371B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{668DC2E4-BEB2-4EE2-8A9C-B23CE169371B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{668DC2E4-BEB2-4EE2-8A9C-B23CE169371B}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {F6109B74-A46F-448A-A6D4-9F24805034E9}
+	EndGlobalSection
+EndGlobal

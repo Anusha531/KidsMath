@@ -1,0 +1,25 @@
+﻿@using Microsoft.AspNetCore.Components
+
+
+<span style="font-size: 18px; color: @GetFeedbackColor(IsCorrect); margin-left: 10px;">
+    @GetFeedbackMessage(IsCorrect)
+</span>
+
+@code {
+    [Parameter]
+    public bool? IsCorrect { get; set; } = false;
+
+    public string GetFeedbackColor(bool? isCorrect) => isCorrect switch
+    {
+        true => "green",
+        false => "red",
+        _ => "black"
+    };
+
+    public string GetFeedbackMessage(bool? isCorrect) => isCorrect switch
+    {
+        true => "Correct!",
+        false => "Incorrect. Try Again!",
+        _ => ""
+    };
+}

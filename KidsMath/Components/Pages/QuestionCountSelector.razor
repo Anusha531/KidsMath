@@ -1,0 +1,37 @@
+﻿@using Microsoft.AspNetCore.Components
+
+<div class="container">
+    <div class="row">
+        <div class="col-12 d-flex align-items-center">
+            <input type="range" min="1" max="24" step="1" value="@selectedCount" @oninput="OnQuestionCountChange"
+                   class="form-range w-100" title="Select the number of questions" />
+            <span class="fw-bold ms-3">@selectedCount</span>
+        </div>
+    </div>
+</div>
+
+@code {
+    private readonly int defaultQuestionCount = 3;
+
+    [Parameter]
+    public int? DefaultQuestionCount { get; set; }
+
+    [Parameter]
+    public EventCallback<int> QuestionCountChanged { get; set; }
+
+    private int selectedCount;
+
+    protected override void OnInitialized()
+    {
+        selectedCount = DefaultQuestionCount ?? defaultQuestionCount;
+    }
+
+    private async Task OnQuestionCountChange(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int count))
+        {
+            selectedCount = count;
+            await QuestionCountChanged.InvokeAsync(count);
+        }
+    }
+}
